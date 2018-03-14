@@ -89,20 +89,176 @@ Run ``` service ssh restart```
 for the effects to take place
 
 # Configuration of the Uncomplicated Firewall (UFW)
+By default ufw is inactive therefore to ensure security we must
+configure it.
 
-If you were to run a 
+Block all incoming connections: ``` sudo ufw default deny incoming ```
+
+Allow outgoing conections on all ports: ``` sudo ufw default allow outgoing ```
+
+Allow connections for ssh/2200 , http/80 ntp/123
+```
+sudo ufw allow 2200/tcp
+sudo ufw allow www
+sudo ufw allow ntp
+```
+To check these rules: ``` sudo ufw show added ```
+
+To enable the rules ``` sudo ufw enable ```
+
+Finally, check that the firewall is active by: 
+```
+sudo ufw status
+```
+
+
 
 # Installing Dependencies
-
+Here were going to install Flask, SQLAlchemy, and PostgreSQL
+, Apache2, and mod_wsgi
 ```
-python apt-get install flask python-pip
-
+sudo apt-get install python-psycopg2 python-flask
+sudo apt-get install python-sqlalchemy python-pip
+sudo pip install oauth2client
+sudo pip install requests
+sudo pip install httplib2
+sudo pip install flask-seasurf
+sudo apt-get install apache2
+sudo apt-get install libapache2-mod-wsgi python-dev
+sudo apt-get install postgresql postgresql-contrib
 ```
+# Setup up PostSQL database
+Create the user named catalog 
+```
+sudo -u postgre createuser -P catalog
+```
+Create an empty database named catalog under the user catalog
+```
+sudo -u postgres createdb -O catalog catalog
+```
+* note that you will be prompted to give your user a password
+
+
 # Configuring your Apache2 served application
 
+# Set up git 
+```
+git config --global user.name <username>
+git config --global user.email <email>
+```
+# Enable Apache2
+We may also stop and restart apache2 
+please read the man docs for more commands
+
+```
+sudo service apache2 start
+```
+# mod_wsgi: 
+```
+sudo a2enmod wsgi
+``` 
+# Clone your app into the apache2 default served site directory
+We also used the 'chown' command to change the owner of the folder
+```
+cd /var/www
+sudo mkdir fullstack
+sudo chown www-data:www-data fullstack/
+cd fullstack
+sudo -u www-data git clone https://github.com/nolansingroy/catalog.git fullstack
+```
+Next we need to create a catalog.wsgi file to serve the application 
+this file should be located right outside your cloned project folder which in this case is the folder catalog. 
+Thes structure should look like these
+```
+/var/www/fullstack/
+catalog catalog.wsgi
+```
+Within this catalog.wsgi file we also need to specify the app secret 
+and postgresql username password and database
+it should look like this
+
+```
+#!/usr/bin/python
+import sys
+import logging
+loggin.basicConfig(stream=sys.stderr)
+sys.path.insert(0, '/srv/fullstack-nanodegree-vm/catalog/catalog')
+
+from catalog import app as application
+application.sectret_key = 'secret_key'
+
+application.config['DATABASE_URL'] = 'postgresql://catalog:password@localhost/catalog'
+```
+* note that within your projects create_database.py and populate_database.py script you
+will need to change the old data base path and name to the new postgresql one
+then call 
+```
+python create_database.py 
+python populate_database.py
+```
+Another way more efficent way instead of manually creating the database 
+would be to just import the modules and call them at the very end of our catalog.wsgi file
+```
+# right under import app as application line
+from catalog.createdatabase import create_db
+
+# then at the very under our application.config lines
+create_db(application.config['DATABASE_URL'])
+```
+
+# Reconnect third party Authentication Services
+We may do these by filling in the client_secret.json file 
+and the google developer api credential, specifically the javascript_origins
+section to match that of your amazon dynamic or static hosted instance ip address
+mines was 
+```
+http://ec2-54-212-242-59.us-west-2.compute.amazonaws.com
+``` 
+* also note that amazon only allows the call back to the ful ip address as stated above
+if you simply try to call the http://54.212.242.59 you will retreve a 404 or 400 error
+
+# Apache2 configuration 
+Create the virutal host file within ``` /etc/apache2/sites-available/catalog.conf ```
+and give it a virtual host script as follows
+```
+<VirtualHost *:80>
+                ServerName 54.212.242.59
+                ServerAdmin nolansingroy@gmail.com
+                WSGIScriptAlias / /var/www/catalog/catalog.wsgi
+                <Directory /var/www/catalog/catalog/>
+                        Order allow,deny
+                        Allow from all
+                </Directory>
+                Alias /static /var/www/catalog/catalog/static
+                <Directory /var/www/catalog/catalog/static/>
+                        DirectoryIndex /notfound
+                        FallbackResource /notfound
+                        Order allow,deny
+                        Allow from all
+                </Directory>
+                ErrorLog ${APACHE_LOG_DIR}/error.log
+                LogLevel warn
+                CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+```
+* Please note that ``` Order allow,deny and Allow from all ```
+may be changesd in to one single line of ``` Required all granted ```
+due to depreciation of the code. 
+
+
+# Set the apache2 served site to serve your project
+
+1. Disable default virtual host: ``` sudo a2dissite 000-default.conf ```
+2. Enable your application virtual host: ``` sudo a2ensite catalog.conf ```
+3. Reload Apache2 ``` sudo service apache2 reload ```
+Go visit your full domain url ``` http://ec2-54-212-242-59.us-west-2.compute.amazonaws.com/ ```
+* Remember if you need to debug you may just change the url endings
+to what ever url you routed to when building your app within Flask, to visit each
+individual page of your application.
 
 # Helpful Documentations
 
 1. https://aws.amazon.com/premiumsupport/knowledge-center/new-user-accounts-linux-instance/
-2. 
+2. http://postgresguide.com/setup/users.html
 3. https://www.digitalocean.com/community/tutorials/how-to-deploy-a-flask-application-on-an-ubuntu-vps
+
