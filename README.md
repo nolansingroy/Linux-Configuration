@@ -213,7 +213,7 @@ would be to just import the modules and call them at the very end of our catalog
  right under import app as application line
 from catalog.create_database import create_db
 
-then at the very under our application.config lines
+ then at the very under our application.config lines
 create_db(application.config['DATABASE_URL'])
 ```
 
@@ -237,6 +237,7 @@ Create the virutal host file within
 
 and give it a virtual host script as follows
 
+
 ```
 <VirtualHost *:80>
                 ServerName 54.212.242.59
@@ -256,10 +257,11 @@ and give it a virtual host script as follows
                 ErrorLog ${APACHE_LOG_DIR}/error.log
                 LogLevel warn
                 CustomLog ${APACHE_LOG_DIR}/access.log combined
-</VirtualHost>
+ </VirtualHost>
 ```
+
 * Please note that ``` Order allow,deny and Allow from all ```
-may be changesd in to one single line of ``` Required all granted ```
+may be changed in to one single line of ``` Required all granted ```
 due to depreciation of the code.
 
 
