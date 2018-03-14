@@ -238,8 +238,7 @@ Create the virutal host file within
 and give it a virtual host script as follows
 
 
-```
-<VirtualHost *:80>
+``` <VirtualHost *:80>
                 ServerName 54.212.242.59
                 ServerAdmin nolansingroy@gmail.com
                 WSGIScriptAlias / /var/www/catalog/catalog.wsgi
@@ -259,6 +258,7 @@ and give it a virtual host script as follows
                 CustomLog ${APACHE_LOG_DIR}/access.log combined
  </VirtualHost>
 ```
+
 
 * Please note that ``` Order allow,deny and Allow from all ```
 may be changed in to one single line of ``` Required all granted ```
